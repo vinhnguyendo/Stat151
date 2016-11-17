@@ -72,7 +72,7 @@ str(Data5)
 
 
 #Q1: Assess willingness to tutor by gender
-```{r include=TRUE}
+```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 #Q1:Fit a model predicting willingness to tutor another student based on the respondent's gender. Partially pool both the intercept and the gender effect.
 Q1 <-  glmer( tutor ~ gender + (gender|school), data=Data5, family=binomial(link="logit") )
 
@@ -108,7 +108,7 @@ VarCorr(Q1.2)
 
 
 #Q2: Visualize school variation
-```{r include=TRUE}
+```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 #Q2: Using the raw data, generate school-level proportions of boys and girls willingness to tutor. Make a scatterplot of these pairs of values.
 #Create two visuals
   #Both school level
@@ -170,7 +170,7 @@ ggplot(data=gendercombined, aes(x=girlpred, y=boypred)) +
 
 
 #Q3: Add level-2 covariates to the model
-```{r include=TRUE}
+```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 #Q3. Design and implement a model potentially incorporating school-level mean sense of belonging and school type (make sure that public schools are the reference category). Be sure to center covariates as needed to give an interpretation for your intercept terms.
 
 #    Reformat school type so that public schools are reference group
@@ -204,7 +204,7 @@ texreg(Q3)
 
 
 #Q4: Visualize the model
-```{r include=TRUE}
+```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
   
 #Create plot to show how your level-2 covariates relate to this probability
 Data5$predprobs2 <- predict(Q3, newdata=Data5, type="response" )
@@ -221,7 +221,7 @@ ggplot( data=Data5, aes( x=avgBelong, y=predprobs2, group=type, color=gender ) )
  
 
 #Q5: Add an interaction to the model
-```{r include=TRUE}
+```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 
 #Add interactions between gender and school type and between gender and school-level sense of belonging to the model
 Q5 <-  glmer(tutor ~ gender*(type2 + centerBelong)  + (gender|school), data=Data5, family=binomial(link="logit"))
