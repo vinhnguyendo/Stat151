@@ -1,0 +1,225 @@
+---
+title: "Assignment 5"
+author: "51237579"
+output: pdf_document
+---
+
+```{r loadlibs, echo=FALSE, message=FALSE, warning=FALSE}
+# This block will not show in your report.  It just loads things and gets you 
+# ready.
+
+# Put all libraries here. 
+library( texreg )
+library( arm )
+library( lme4 )
+library( foreign )
+library( plyr)
+library( sqldf) 
+library( foreign )
+library( sqldf)
+library( ggplot2 ) 
+library( scales )
+library( pander)
+library( nlme)
+library( lattice)
+library( Hmisc)
+ 
+
+# Put global display options here
+options(digits=2)
+
+# This flag is to control whether analytic code blocks should display
+# the code itself.
+# When turning in work, you should knit two pdfs, 
+# with this variable set to FALSE and TRUE respectively.
+# When FALSE you have a nice report with results only.  When TRUE you have 
+# the code itself so we can see what you did.
+show.code = FALSE
+# show.code = TRUE # just comment this line out to make it false
+
+# This controls whether the code for making plots should be shown.
+# When turning in your work, you should leave this as FALSE, 
+# unless there is something about your plots that is not working as it should.
+show.plot.code = show.code
+show.plot.code = FALSE #  comment this out to make it follow the overall config
+
+
+# You might put code to load data and get it ready for analysis here.
+# ...
+ 
+```
+
+
+
+
+
+
+```{r include=FALSE}
+#PREPARING DATA
+
+# set working directory
+setwd("/Users/vinhtony2808/Google Drive/Fall 2016/Stat 151 - Multilevel Modeling/Assignments/Assignment 5")
+getwd()
+
+#Call in Data
+Data5 <- read.csv('assignment_5_data.csv')
+ 
+str(Data5)
+
+
+```
+
+
+
+#Q1
+```{r include=TRUE}
+#Q1:Fit a model predicting willingness to tutor another student based on the respondent's gender. Partially pool both the intercept and the gender effect.
+Q1 <-  glmer( tutor ~ gender + (gender|school), data=Data5, family=binomial(link="logit") )
+
+summary(Q1)
+
+  Data5$male[Data5$gender=='Female'] <-0
+  Data5$male[Data5$gender=='Male'] <-1
+
+#Q1.2 fix weird issue
+  #issue: there's a perfectively negative correlation between intercept and slope
+  VarCorr(Q1)
+  
+#Fix: Normally, our fix is to center our means, but we can't do that with gender, so we'll add an interaction term for the proportion of male students
+#Create school-level dataset that has proportion of male students
+schoolMale <- sqldf('select distinct school, 
+                                     avg(male) as propMale
+                     from Data5 
+                     group by school')
+ 
+Data5 <- merge(Data5,schoolMale,by="school")
+  
+Q1.2 <- glmer( tutor ~ gender*propMale + (gender|school), data=Data5, family=binomial(link="logit") )
+
+summary(Q1.2)
+
+VarCorr(Q1.2)
+
+#basic answer for now: girls have a higher probability 
+
+```
+
+
+#Q2
+```{r include=TRUE}
+#Q2: Using the raw data, generate school-level proportions of boys and girls willingness to tutor. Make a scatterplot of these pairs of values.
+#Create two visuals
+  #Both school level
+  #Both plot girsl vs boys
+  #One is the raw proportion of students that were willing, i.e., average(tutor2) by school and gender
+  #One is the predicted probablity
+
+#DATA PREPARATION
+  Data5$tutor2[Data5$tutor=='No'] <-0
+  Data5$tutor2[Data5$tutor=='Yes'] <-1
+  
+  table(Data5$tutor2)
+  table(Data5$tutor)
+   
+  #Create dataset for the predicted probabilities 
+  #specifying type="response" returns predictions on the probability scale
+  Data5$predprobs <- predict(Q1, newdata=Data5, type="response" )
+  
+  #Create 2 school-level datasets with:
+    #average proportion of students willing to tutor (girlprop and boyprop)
+    #predicted probability predprobs which we'll rename as girlpred/boypred
+  #Separately for girls and boys
+    girls <- sqldf("select distinct school,
+                                   avg(tutor2) as girlprop,
+                                   predprobs   as girlpred
+                      from Data5 
+                      where gender = 'Female'
+                      group by school" )
+   
+    boys <- sqldf("select distinct school,
+                                   avg(tutor2) as boyprop,
+                                   predprobs   as boypred
+                      from Data5 
+                      where gender = 'Male'
+                      group by school")
+   
+    #merge those two datasets
+    gendercombined <-merge(girls,boys,by="school")
+   
+#CREATE PLOTS
+#Q2.1 raw probabilities plot
+ggplot(data=gendercombined, aes(x=girlprop, y=boyprop)) + 
+  geom_point()+
+  ylim(.7,1) +
+  xlim(.7,1) +
+  labs(title="Q2.1: Raw school-level proportions of\n willingness to tutor\n boys vs girls"
+          ,x="Willingness to tutor\n (girls)"
+          ,y="Willingness to tutor\n (boys)") 
+
+#Q2.2 predicted probabilities plot
+ggplot(data=gendercombined, aes(x=girlpred, y=boypred)) + 
+  geom_point() +
+  ylim(.7,1) +
+  xlim(.7,1) +
+  labs(title="Q2.2: Predicted school-level probabilities of\n willingness to tutor\n boys vs girls"
+          ,x="Willingness to tutor\n (girls)"
+          ,y="Willingness to tutor\n (boys)") 
+```
+
+
+#Q3
+```{r include=TRUE}
+#Q3. Design and implement a model potentially incorporating school-level mean sense of belonging and school type (make sure that public schools are the reference category). Be sure to center covariates as needed to give an interpretation for your intercept terms.
+
+#    Reformat school type so that public schools are reference group
+str(Data5)
+Data5$type2[Data5$type=='Public'] <-0
+Data5$type2[Data5$type=='Private'] <-1
+Data5$type2[Data5$type=='Religious'] <-2
+table(Data5$type, Data5$type2)
+
+#Need to center school-lever belong
+#First compute grand mean across all schools which we'll subtract from the school level mean
+Data5$belongGrandMean <- mean(Data5$belong,na.rm=TRUE)
+
+#    Generate school-level mean sense of belonging
+schoolBelong <- sqldf('select distinct school,
+                               avg(belong) - belongGrandMean as centerBelong 
+                          from Data5
+                          group by school')
+
+#Merge the school-level sense of belong to child-level data
+Data5 <- merge(Data5,schoolBelong,by="school")
+
+Q3 <-  glmer(tutor ~ gender + type2 + centerBelong  + (gender|school), data=Data5, family=binomial(link="logit"))
+
+summary(Q3)
+
+
+```
+ 
+
+
+#Q4
+```{r include=TRUE}
+
+```
+ 
+
+#Q5
+```{r include=TRUE}
+
+
+```
+ 
+
+
+
+
+
+
+
+Acknowledgements:
+90880525
+10903106
+40902457
