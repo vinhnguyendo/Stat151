@@ -1,6 +1,6 @@
 ---
 title: "Assignment 5"
-author: "51237579"
+author: "40902457 and 51237579"
 output: pdf_document
 ---
 
@@ -71,21 +71,23 @@ str(Data5)
 
 
 
-#Q1
+#Q1: Assess willingness to tutor by gender
 ```{r include=TRUE}
 #Q1:Fit a model predicting willingness to tutor another student based on the respondent's gender. Partially pool both the intercept and the gender effect.
 Q1 <-  glmer( tutor ~ gender + (gender|school), data=Data5, family=binomial(link="logit") )
 
-summary(Q1)
-
-  Data5$male[Data5$gender=='Female'] <-0
-  Data5$male[Data5$gender=='Male'] <-1
+texreg(Q1)
 
 #Q1.2 fix weird issue
   #issue: there's a perfectively negative correlation between intercept and slope
   VarCorr(Q1)
   
 #Fix: Normally, our fix is to center our means, but we can't do that with gender, so we'll add an interaction term for the proportion of male students
+
+#Create male indicator var
+  Data5$male[Data5$gender=='Female'] <-0
+  Data5$male[Data5$gender=='Male'] <-1
+  
 #Create school-level dataset that has proportion of male students
 schoolMale <- sqldf('select distinct school, 
                                      avg(male) as propMale
@@ -96,7 +98,7 @@ Data5 <- merge(Data5,schoolMale,by="school")
   
 Q1.2 <- glmer( tutor ~ gender*propMale + (gender|school), data=Data5, family=binomial(link="logit") )
 
-summary(Q1.2)
+texreg(Q1.2)
 
 VarCorr(Q1.2)
 
@@ -105,7 +107,7 @@ VarCorr(Q1.2)
 ```
 
 
-#Q2
+#Q2: Visualize school variation
 ```{r include=TRUE}
 #Q2: Using the raw data, generate school-level proportions of boys and girls willingness to tutor. Make a scatterplot of these pairs of values.
 #Create two visuals
@@ -167,7 +169,7 @@ ggplot(data=gendercombined, aes(x=girlpred, y=boypred)) +
 ```
 
 
-#Q3
+#Q3: Add level-2 covariates to the model
 ```{r include=TRUE}
 #Q3. Design and implement a model potentially incorporating school-level mean sense of belonging and school type (make sure that public schools are the reference category). Be sure to center covariates as needed to give an interpretation for your intercept terms.
 
@@ -182,8 +184,9 @@ table(Data5$type, Data5$type2)
 #First compute grand mean across all schools which we'll subtract from the school level mean
 Data5$belongGrandMean <- mean(Data5$belong,na.rm=TRUE)
 
-#    Generate school-level mean sense of belonging
+#Generate school-level mean sense of belonging
 schoolBelong <- sqldf('select distinct school,
+                               avg(belong) as avgBelong,
                                avg(belong) - belongGrandMean as centerBelong 
                           from Data5
                           group by school')
@@ -193,33 +196,40 @@ Data5 <- merge(Data5,schoolBelong,by="school")
 
 Q3 <-  glmer(tutor ~ gender + type2 + centerBelong  + (gender|school), data=Data5, family=binomial(link="logit"))
 
-summary(Q3)
+texreg(Q3)
 
 
 ```
  
 
 
-#Q4
+#Q4: Visualize the model
+```{r include=TRUE}
+  
+#Create plot to show how your level-2 covariates relate to this probability
+Data5$predprobs2 <- predict(Q3, newdata=Data5, type="response" )
+
+ggplot( data=Data5, aes( x=avgBelong, y=predprobs2, group=type, color=gender ) ) +
+      labs(title="Q4: Relationship between mean school-level belonging\n and predicted probability of willingness to tutor\n by school type"
+          ,x="Mean school-level belonging"
+          ,y="Predicted probability of\n willingness to tutor")+
+      facet_wrap( ~ type ) +
+      geom_point()
+
+
+```
+ 
+
+#Q5: Add an interaction to the model
 ```{r include=TRUE}
 
+#Add interactions between gender and school type and between gender and school-level sense of belonging to the model
+Q5 <-  glmer(tutor ~ gender*(type2 + centerBelong)  + (gender|school), data=Data5, family=binomial(link="logit"))
+
+texreg(Q5)
 ```
  
-
-#Q5
-```{r include=TRUE}
-
-
-```
- 
-
-
-
-
-
-
 
 Acknowledgements:
 90880525
-10903106
-40902457
+10903106 
