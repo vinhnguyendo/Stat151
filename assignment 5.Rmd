@@ -229,7 +229,7 @@ ggplot( data=Data5, aes( x=avgBelong, y=predprobs2, group=type, color=gender ) )
 ```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 
 #Add interactions between gender and school type and between gender and school-level sense of belonging to the model
-Q5 <-  glmer(tutor ~ gender*(type2 + centerBelong)  + (gender|school), data=Data5, family=binomial(link="logit"))
+Q5 <-  glmer(tutor ~ gender*(type + centerBelong)  + (gender|school), data=Data5, family=binomial(link="logit"))
 
 texreg(Q5)
 ```
