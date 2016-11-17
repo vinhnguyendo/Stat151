@@ -4,6 +4,8 @@ author: "40902457 and 51237579"
 output: pdf_document
 ---
 
+
+
 ```{r loadlibs, echo=FALSE, message=FALSE, warning=FALSE}
 # This block will not show in your report.  It just loads things and gets you 
 # ready.
@@ -23,7 +25,10 @@ library( pander)
 library( nlme)
 library( lattice)
 library( Hmisc)
- 
+library(formatR)
+library(knitr)
+
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 
 # Put global display options here
 options(digits=2)
@@ -53,12 +58,11 @@ show.plot.code = FALSE #  comment this out to make it follow the overall config
 
 
 
-
 ```{r include=FALSE}
 #PREPARING DATA
 
 # set working directory
-setwd("/Users/vinhtony2808/Google Drive/Fall 2016/Stat 151 - Multilevel Modeling/Assignments/Assignment 5")
+setwd("/Users/vinhtony2808/Documents/Stat151")
 getwd()
 
 #Call in Data
@@ -107,6 +111,8 @@ VarCorr(Q1.2)
 ```
 
 
+
+\newpage
 #Q2: Visualize school variation
 ```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 #Q2: Using the raw data, generate school-level proportions of boys and girls willingness to tutor. Make a scatterplot of these pairs of values.
@@ -120,8 +126,8 @@ VarCorr(Q1.2)
   Data5$tutor2[Data5$tutor=='No'] <-0
   Data5$tutor2[Data5$tutor=='Yes'] <-1
   
-  table(Data5$tutor2)
-  table(Data5$tutor)
+  #table(Data5$tutor2)
+  #table(Data5$tutor)
    
   #Create dataset for the predicted probabilities 
   #specifying type="response" returns predictions on the probability scale
@@ -168,17 +174,10 @@ ggplot(data=gendercombined, aes(x=girlpred, y=boypred)) +
           ,y="Willingness to tutor\n (boys)") 
 ```
 
-
+\newpage
 #Q3: Add level-2 covariates to the model
 ```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 #Q3. Design and implement a model potentially incorporating school-level mean sense of belonging and school type (make sure that public schools are the reference category). Be sure to center covariates as needed to give an interpretation for your intercept terms.
-
-#    Reformat school type so that public schools are reference group
-str(Data5)
-Data5$type2[Data5$type=='Public'] <-0
-Data5$type2[Data5$type=='Private'] <-1
-Data5$type2[Data5$type=='Religious'] <-2
-table(Data5$type, Data5$type2)
 
 #Need to center school-lever belong
 #First compute grand mean across all schools which we'll subtract from the school level mean
@@ -194,7 +193,13 @@ schoolBelong <- sqldf('select distinct school,
 #Merge the school-level sense of belong to child-level data
 Data5 <- merge(Data5,schoolBelong,by="school")
 
-Q3 <-  glmer(tutor ~ gender + type2 + centerBelong  + (gender|school), data=Data5, family=binomial(link="logit"))
+#Currently, 1 = Private, 2 = Public, and 3 = Religious
+#We want Public to be the reference category, so we're going to relevel
+Data5 <- within(Data5, type <- relevel(type, ref = 2))
+
+
+Q3 <-  glmer(tutor ~ gender + type + centerBelong  + (gender|school), data=Data5, family=binomial(link="logit"))
+
 
 texreg(Q3)
 
@@ -202,7 +207,7 @@ texreg(Q3)
 ```
  
 
-
+\newpage
 #Q4: Visualize the model
 ```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
   
@@ -219,7 +224,7 @@ ggplot( data=Data5, aes( x=avgBelong, y=predprobs2, group=type, color=gender ) )
 
 ```
  
-
+\newpage
 #Q5: Add an interaction to the model
 ```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
 
