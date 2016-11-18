@@ -27,6 +27,7 @@ library( lattice)
 library( Hmisc)
 library(formatR)
 library(knitr)
+library(effects)
 
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 
@@ -81,6 +82,13 @@ str(Data5)
 Q1 <-  glmer( tutor ~ gender + (gender|school), data=Data5, family=binomial(link="logit") )
 
 texreg(Q1)
+
+#compute confidence intervals
+Q1_ConfInt <- confint(Q1)
+
+
+#plot the predicted probabilities
+plot(allEffects(Q1))
 
 #Q1.2 fix weird issue
   #issue: there's a perfectively negative correlation between intercept and slope
@@ -197,11 +205,14 @@ Data5 <- merge(Data5,schoolBelong,by="school")
 #We want Public to be the reference category, so we're going to relevel
 Data5 <- within(Data5, type <- relevel(type, ref = 2))
 
-
 Q3 <-  glmer(tutor ~ gender + type + centerBelong  + (gender|school), data=Data5, family=binomial(link="logit"))
 
-
 texreg(Q3)
+ 
+#compute confidence intervals
+exp(confint(Q3)[-1,])
+
+ 
 
 
 ```
@@ -220,8 +231,6 @@ ggplot( data=Data5, aes( x=avgBelong, y=predprobs2, group=type, color=gender ) )
           ,y="Predicted probability of\n willingness to tutor")+
       facet_wrap( ~ type ) +
       geom_point()
-
-
 ```
  
 \newpage
@@ -232,6 +241,11 @@ ggplot( data=Data5, aes( x=avgBelong, y=predprobs2, group=type, color=gender ) )
 Q5 <-  glmer(tutor ~ gender*(type + centerBelong)  + (gender|school), data=Data5, family=binomial(link="logit"))
 
 texreg(Q5)
+
+#compute confidence intervals
+
+
+exp(confint(Q5)[-1,])
 ```
  
 
