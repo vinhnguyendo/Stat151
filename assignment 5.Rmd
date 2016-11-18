@@ -85,7 +85,7 @@ texreg(Q1)
 
 #compute confidence intervals
 Q1_ConfInt <- confint(Q1)
-
+exp(Q1_ConfInt)
 
 #plot the predicted probabilities
 plot(allEffects(Q1))
@@ -210,7 +210,11 @@ Q3 <-  glmer(tutor ~ gender + type + centerBelong  + (gender|school), data=Data5
 texreg(Q3)
  
 #compute confidence intervals
-exp(confint(Q3)[-1,])
+Q3_ConfInt <- confint(Q3)
+exp(Q3_ConfInt)
+
+#plot the predicted probabilities
+plot(allEffects(Q3))
 
  
 
@@ -243,9 +247,12 @@ Q5 <-  glmer(tutor ~ gender*(type + centerBelong)  + (gender|school), data=Data5
 texreg(Q5)
 
 #compute confidence intervals
+Q5_ConfInt <- confint(Q5)
+exp(Q5_ConfInt)
 
+#plot the predicted probabilities
+plot(allEffects(Q5))
 
-exp(confint(Q5)[-1,])
 ```
  
 
