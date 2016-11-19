@@ -182,8 +182,6 @@ ggplot(data=gendercombined, aes(x=girlpred, y=boypred)) +
 ###Q2 Discussion
 There is some evidence of model misfit in the plot that depicts predicted probabilities (Plot Q2.2). Specifically, it suggests a smooth trend between predicted, school-level probabilities of male and female willingness to tutor, but does not capture the variation seen in the plot depicting raw, school-level proportions (Plot Q.2.1) of male and female willingness to tutor.
 
-
-
 \newpage
 #Q3: Add level-2 covariates to the model
 ```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
@@ -213,33 +211,21 @@ texreg(list(Q1,Q3))
 #coeff for centerBelong is 1.18, meaning a 1 standard deviation increases the log-odds of tutoring by whatever 1 SD of centerBelong is by 1.18
 
 
-#compute confidence intervals
-#Using plotted confidence intervals instead
-#Q3_ConfInt <- confint(Q3)
-#exp(Q3_ConfInt)
+#compute odds
+ 
+exp(fixef(Q3))
 
 #plot the predicted probabilities with confidence intervals
 #gender by school type
 
-ranef(Q3)
-
-plot(fixef(Q3))
-plot(ranef(Q1))
-Effect(c("gender" ),Q3)
-allEffects(Q3)
-
-hist(Data5$predprobsQ5)
-
-plot(effect(c("gender:type"),Q3), main="Q5.2: Predicted probabilities by gender\n and school type\n 95% CI")
-
-#gender by centered school-level belong
-plot(effect(c("gender:centerBelong"),Q5), main="Q5.3: Predicted probabilities by gender\n and centered school-level belonging\n 95% CI")
 
 
 
 ```
 ###Q3 Discussion
-There is an improvement in this model because after we account for school type and grand mean centered school-level sense of belonging, the variance component for the intercept goes from 0.46 to 0.18.  That is, roughly 60 percent of the variance in a studentlog-odds 
+Model 2 (for Q3) indicates that the probability that the odds of a typical, male student in a public school being willing to tutor are 0.46 times those a girl, other things being considered. For schools, each unit increase in CenterBelong corresponds to an increase of approximately 3.25 (p < 0.01). Unsurprisingly, this suggests that being at a school with peers who on average have higher levels of belonging may increase the likelihood that a student is willing to tutor.  
+
+There is an improvement in this model as compared to model 1 because after we account for school type and grand mean-centered, school-level sense of belonging, the variance component for the adjusted school log-odd of willingness to tutor from 0.46 to 0.18. This suggests that roughly 60 percent of the variance for the school adjusted log-odds of tutoring has been accounted for by these level 2 covariates.
 
 
 
@@ -265,6 +251,16 @@ ggplot( data=Data5, aes( x=avgBelong, y=predprobs2, group=type, color=gender ) )
 #Add interactions between gender and school type and between gender and school-level sense of belonging to the model
 Q5 <-  glmer(tutor ~ gender*(type + centerBelong)  + (gender|school), data=Data5, family=binomial(link="logit"))
 
+texreg(list(Q1,Q3,Q5))
+```
+###Q5 Discussion
+Figure Q5.1 shows the predicted probabilities of willingness to tutor by gender and school type, as well as the 95 percent confidence intervals. For each school type, the model suggests that the typical female student has a higher probability of being willing to tutor than does the typical male student. The range of plausible values for the probability of willingness to tutor for the typical female student in a public and private is comparable (roughly 5 percent in either direction), while the range for the typical female student in religious schools is roughly 9 percent in either direction.  For the typical male student in public and private schools, the range is roughly 3 to 4 percent in either direction, while the the typical male in religious schools is roughly 5 percent in either direction.  
+
+
+Figure Q5.2 depicts the predicted probabilities by the same for gender and grand mean centered school-level belonging. Again, the model still suggests differential probabilities of willingness to tutor by gender, with female students having higher predicted probabilities.  And similar to model 3, the predicted probabilities increase for the typical student of either gender when they are at schools with higher average levels of belonging.  The confidence intervals (shown in gray) increase in size at the lower and higher ends of average sense of belonging.  Additionally, the steeper slope for the typical female student suggests that school-level sense of belonging affects the the typical female student’s willingness to tutor more so than the typical male.  Like model 2 (for Q3), model 3 (for Q5) is an improvement over model 1, as shown from the decrease in the variance component for the intercept (0.46 to 0.14).  The between-school variability in gender remained similar (0.08 to 0.09) and largely unexplained. 
+
+```{r, echo=TRUE, results='asis', message=FALSE, warning=FALSE}
+ 
 #plot the predicted probabilities with confidence intervals
 #gender by school type
 plot(effect(c("gender:type"),Q5), main="Q5.1: Predicted probabilities by gender\n and school type\n 95% CI")
@@ -272,17 +268,10 @@ plot(effect(c("gender:type"),Q5), main="Q5.1: Predicted probabilities by gender\
 #gender by centered school-level belong
 plot(effect(c("gender:centerBelong"),Q5), main="Q5.2: Predicted probabilities by gender\n and centered school-level belonging\n 95% CI")
 
-texreg(list(Q1,Q3,Q5))
-
-summary(allEffects(Q5, confidence.interval=.95))
-
-
+ 
 ```
-###Q5 Discussion
-Plots Q5.1 the predicted probabilities of willingness to tutor by gender and school type, as well as the 95 percent confidence intervals. For each school type, the model suggests that the typical female student has a higher probability of being willing to tutor than does the typical male student.  The range of plausible
 
 
-, while Q5.2 does the same for gender and school-level belonging.  
 
 
 Acknowledgements:
